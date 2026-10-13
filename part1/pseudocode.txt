@@ -1,0 +1,102 @@
+Deduper
+Goal: Use a reference to remove PCR duplicates from a SAM file
+    -PCR duplicates can cause errors when trying to analyze read
+     depth, expression, etc.
+
+Duplicate requirements:
+    -Same chromosome (rname - col 3)
+    -Same position (Pos - col 4) -- convert to 5'
+    -Same strand (Flag 16 - col 2)
+    -Same UMI (qname - end of col 1)
+    -Softclipping -- may alter "start" (CIGAR - col 6)
+    -outputs 1st read found
+    -outputs properly formatted sam file
+
+--------------------------------------------------------------
+Modules
+-------
+import gzip
+
+import argparse
+    -f --file absolute file path to sorted sam file
+    -o --outfile absolute file path to deduplicated sam file
+    -u --umi file containing list of UMIs
+    -h --help prints useful help message
+
+--------------------------------------------------------------
+Functions
+---------
+function for strand
+#inputs an int (flag) and returns a bool (reverse)
+if ((flag & 16) == 16):
+    reverse = True
+else:
+    reverse = False
+return reverse
+
+function for position
+#inputs an int (Pos), a bool (reverse), and a string (CIGAR) and returns an int (Pos)
+if reverse = True:
+    length = add all values preceding an M, D, N, =, X
+    if CIGAR's last letter is an S:
+        end_clip = numbers before S
+    Pos = Pos + length + clip -1
+else:
+    if CIGAR's first letter is an S:
+        start_clip = numbers before S
+        Pos = Pos - clip
+return Pos
+
+--------------------------------------------------------------
+Pseudocode
+----------
+#sort!
+#create dicts
+initialize umi_dict
+initalize seen_dict
+
+open args.umi:
+    for line in args.umi:
+        add umi to umi_dict as key
+
+#read/write files
+open args.file and args.outfile:
+    for line in args.file:
+        line = strip and split line by tab
+        if line starts with @:
+            write to args.outfile
+        else:
+            #Check/assign UMI
+            UMI = split col 1 by ":" and take last
+            if UMI not in umi_dict:
+                continue
+
+            #Assign current variables
+            chr = col 3 of line
+            strand = run function for strand on col 2
+            pos = run function for position on col 4, strand, and col 6
+
+            #Compare to previous variables
+            if chr not the same as chr:
+                clear seen_dict
+            if pos, strand, and UMI are in seen_dict:
+                continue
+            else:
+                write whole line to args.outfile
+                add variables to seen_dict
+                assign chr to current_chr
+
+--------------------------------------------------------------
+Testfiles
+---------
+1 - INCLUDE (fwd)
+2 - identical to 1 SKIP
+3 - same as 1 because of softclip SKIP
+4 - same as 1 but different UMI INCLUDE
+5 - same as 1 but different strand INCLUDE
+6 - same as 1 but different pos INCLUDE
+7 - INCLUDE (rv)
+8 - identical to 7 SKIP
+9 - same as 7 because of softclip SKIP
+10 - same as 1 but different chr INCLUDE
+11 - invalid UMI SKIP
