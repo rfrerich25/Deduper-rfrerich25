@@ -34,18 +34,25 @@ else:
     reverse = False
 return reverse
 
+test: 16 should return True, 31 should return True  
+      0 should return False, 47 should return False
+
+
 function for position
 #inputs an int (Pos), a bool (reverse), and a string (CIGAR) and returns an int (Pos)
 if reverse = True:
     length = add all values preceding an M, D, N, =, X
     if CIGAR's last letter is an S:
         end_clip = numbers before S
-    Pos = Pos + length + clip -1
+    Pos = Pos + length + end_clip -1
 else:
     if CIGAR's first letter is an S:
         start_clip = numbers before S
-        Pos = Pos - clip
+        Pos = Pos - start_clip
 return Pos
+
+test: (20, T, 30M2S) should return 52
+      (20, F, 2S10M) should return 18
 
 --------------------------------------------------------------
 Pseudocode
